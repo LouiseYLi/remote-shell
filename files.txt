@@ -1,2 +1,2 @@
-server src/server.c src/display.c include/display.h
-client src/client.c src/display.c include/display.h
+server include/network_utils.h src/network_utils.c src/server.c src/display.c include/display.h
+client include/network_utils.h src/network_utils.c src/client.c src/display.c include/display.h
