@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
             // Close network socket, uneeded
             close(net_socket.sockfd);
 
-            while(!client_exit)
+            while(client_exit == 0)
             {    // Handle client connection
                 ssize_t bytes_received;
 
@@ -156,20 +156,9 @@ int main(int argc, char *argv[])
                 {
                     break;
                 }
-                printf("client_exit %d", client_exit);
-
-                // exec cmd
-                // if (execv(client_argv[0], client_argv) == -1) {
-                //     perror("execvp failed");
-                //     exit(1);
-                // }
-                // if (client_argv[0] != NULL) { // Only execute if there is a command
-                //     if (execv(client_argv[0], client_argv[0], client_argv[1], client_argv[2], NULL) == -1) {
-                //         perror("execlp failed");
-                //         exit(1);
-                //     }
-                // }
+                printf("client_exit %d\n", client_exit);
             }
+            printf("exiting child process\n");
             socket_close(*accepted_fd_copy);
             free(accepted_fd_copy);
             exit(0);
@@ -189,48 +178,51 @@ int main(int argc, char *argv[])
             // ++total_pid;
         }
     }
-    // if(execv(, argv) == -1)
-    // {
-    //     perror("execv");
-    //     socket_close(accepted_fd);
-    //     continue;
-    // }
-    // memset(buffer, 0, sizeof(buffer));
-    // bytes_received = recv(accepted_fd, buffer, sizeof(buffer), 0);
-
-    //==============
-    // if(bytes_received <= 0)
-    // {
-    //     // Handle errors or client disconnection
-    //     if(bytes_received == 0)
-    //     {
-    //         printf("Client disconnected.\n");
-    //     }
-    //     else
-    //     {
-    //         perror("Error receiving data");
-    //     }
-    //     socket_close(accepted_fd);
-    //     continue;
-    // }
-    //==============
-
-    // printf("Received from client: %s\n", buffer);
-    // socket_close(accepted_fd);
 
     display("server ran successfully");
 
 cleanup:
-    // while(total_pid > 0)
-    // {
-    //     reap_child(&total_pid, &err);
-    //     if(err != 0)
-    //     {
-    //         break;
-    //     }
-    // }
+
     socket_close(net_socket.sockfd);
 
 done:
     return err;
 }
+
+// while(total_pid > 0)
+// {
+//     reap_child(&total_pid, &err);
+//     if(err != 0)
+//     {
+//         break;
+//     }
+// }
+
+// if(execv(, argv) == -1)
+// {
+//     perror("execv");
+//     socket_close(accepted_fd);
+//     continue;
+// }
+// memset(buffer, 0, sizeof(buffer));
+// bytes_received = recv(accepted_fd, buffer, sizeof(buffer), 0);
+
+//==============
+// if(bytes_received <= 0)
+// {
+//     // Handle errors or client disconnection
+//     if(bytes_received == 0)
+//     {
+//         printf("Client disconnected.\n");
+//     }
+//     else
+//     {
+//         perror("Error receiving data");
+//     }
+//     socket_close(accepted_fd);
+//     continue;
+// }
+//==============
+
+// printf("Received from client: %s\n", buffer);
+// socket_close(accepted_fd);
