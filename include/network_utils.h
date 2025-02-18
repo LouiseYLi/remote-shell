@@ -3,6 +3,7 @@
 
 #include "../include/display.h"
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -10,9 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define PORT 8080
+#define BUFFER_SIZE 1024
+#define MAX_PROCESSES 10
+#define MAX_ARGS 10
 
 struct socket_network
 {
@@ -22,7 +28,7 @@ struct socket_network
     socklen_t               addr_len;
 };
 
-void setup_signal(void (*handler)(int), int *err);
+void setup_signal(void (*handler)(int), int signal_type, int *err);
 
 void handle_arguments(int argc, char *argv[], struct socket_network *net_socket, int *err);
 

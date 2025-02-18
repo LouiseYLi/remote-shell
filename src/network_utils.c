@@ -1,8 +1,8 @@
 #include "../include/network_utils.h"
 
-void setup_signal(void (*handler)(int), int *err)
+void setup_signal(void (*handler)(int), const int signal_type, int *err)
 {
-    if(signal(SIGINT, handler) == SIG_ERR)
+    if(signal(signal_type, handler) == SIG_ERR)
     {
         perror("Error setting up signal handler");
         *err = errno;
