@@ -81,7 +81,7 @@ void remove_trailing_newline(char *str)
     }
 }
 
-int is_builtin_cmd(const char *cmd, int *err)
+int is_builtin_cmd(const char *cmd, char full_path[], int *err)
 {
     char       *saveptr;
     const char *token;
@@ -110,7 +110,8 @@ int is_builtin_cmd(const char *cmd, int *err)
     token = strtok_r(env_path_copy, ":", &saveptr);
     while(token != NULL)
     {
-        if(find_cmd(token, cmd, err) == 1)
+        find_cmd(token, cmd, full_path, err);
+        if(strlen(full_path) > 0)
         {
             is_builtin = 1;
             break;
@@ -124,35 +125,37 @@ done:
     return is_builtin;
 }
 
-int find_cmd(const char *path, const char *cmd, int *err)
+void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
 {
     const struct dirent *entry;
     DIR                 *dir_p;
-    int                  found = 0;
+    int                  concat_result;
 
     dir_p = opendir(path);
     if(dir_p == NULL)
     {
         perror("opendir");
         *err = errno;
-        goto done;
+        return;
     }
-    else
+    printf("opened directory: %s...\n", path);
+    // readdir_r is deprecated, that's why i
+    // cppcheck-suppress readdirCalled
+    while((entry = readdir(dir_p)))
     {
-        printf("opened directory: %s...\n", path);
-        // readdir_r is deprecated, that's why i
-        // cppcheck-suppress readdirCalled
-        while((entry = readdir(dir_p)))
+        if(strcasecmp(entry->d_name, cmd) == 0)
         {
-            if(strcasecmp(entry->d_name, cmd) == 0)
+            concat_result = snprintf(full_path, BUFFER_SIZE, "%s/%s", path, cmd);
+            if(concat_result < 0)
             {
-                printf("Found match! %s\n", entry->d_name);
-                found = 1;
+                perror("snprintf");
+                *err = 1;
                 break;
             }
+            printf("Found match: %s at %s\n", entry->d_name, full_path);
+            // found = 1;
+            break;
         }
     }
     closedir(dir_p);
-done:
-    return found;
 }

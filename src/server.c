@@ -129,8 +129,9 @@ int main(int argc, char *argv[])
         if(pid == 0)
         {
             char *client_argv[MAX_ARGS];
-            int   client_exit = 0;
             int   is_builtin;
+            int   client_exit = 0;
+            char  full_path[BUFFER_SIZE];
 
             // Close network socket, uneeded
             close(net_socket.sockfd);
@@ -161,7 +162,7 @@ int main(int argc, char *argv[])
                 }
 
                 // if cmd is builtin
-                is_builtin = is_builtin_cmd(client_argv[0], &err);
+                is_builtin = is_builtin_cmd(client_argv[0], full_path, &err);
                 if(is_builtin == 1 && err == 0)
                 {
                     printf("cmd is built-in.\n");

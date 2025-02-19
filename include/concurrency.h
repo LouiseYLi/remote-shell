@@ -11,8 +11,8 @@ void remove_trailing_newline(char *str);
 
 int tokenize_client_args(char *client_argv[], char buffer[], int *err);
 
-int is_builtin_cmd(const char *cmd, int *err);
+int is_builtin_cmd(const char *cmd, char *full_path, int *err);
 
-int find_cmd(const char *path, const char *cmd, int *err);
+void find_cmd(const char *path, const char *cmd, char *full_path, int *err);
 
 #endif    // CONCURRENCY_H
