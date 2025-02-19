@@ -130,6 +130,7 @@ int main(int argc, char *argv[])
         {
             char *client_argv[MAX_ARGS];
             int   client_exit = 0;
+            int   is_builtin;
 
             // Close network socket, uneeded
             close(net_socket.sockfd);
@@ -151,12 +152,28 @@ int main(int argc, char *argv[])
                         continue;
                     }
                 }
+
+                // tokenize arguments
                 client_exit = tokenize_client_args(client_argv, buffer, &err);
                 if(err != 0)
                 {
                     break;
                 }
-                printf("client_exit %d\n", client_exit);
+
+                // if cmd is builtin
+                is_builtin = is_builtin_cmd(client_argv[0], &err);
+                if(is_builtin == 1 && err == 0)
+                {
+                    printf("cmd is built-in.\n");
+                }
+                else if(is_builtin == 0 && err == 0)
+                {    // if cmd is not builtin
+                    printf("cmd is NOT built-in.\n");
+                }
+                else if(err != 0)
+                {
+                    break;
+                }
             }
             printf("exiting child process\n");
             socket_close(*accepted_fd_copy);
