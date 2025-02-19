@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +21,8 @@
 #define BUFFER_SIZE 1024
 #define MAX_PROCESSES 10
 #define MAX_ARGS 10
+#define INT_BUFFER_SIZE 10
+#define EXIT_REQ_SIZE 5
 
 struct socket_network
 {
@@ -27,6 +30,7 @@ struct socket_network
     int                     sockfd;
     struct sockaddr_storage addr;
     socklen_t               addr_len;
+    uint16_t                port;
 };
 
 void setup_signal(void (*handler)(int), int signal_type, int *err);

@@ -106,15 +106,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        // if(total_pid >= MAX_PROCESSES)
-        // {
-        //     reap_child(&total_pid, &err);
-        //     if(err != 0)
-        //     {
-        //         break;
-        //     }
-        // }
-
         // Create a temp copy that will not be overwritten
         accepted_fd_copy = (int *)malloc(sizeof(int));
         if(accepted_fd_copy == NULL)
@@ -129,9 +120,10 @@ int main(int argc, char *argv[])
         if(pid == 0)
         {
             char *client_argv[MAX_ARGS];
+            char  full_path[BUFFER_SIZE];
             int   is_builtin;
             int   client_exit = 0;
-            char  full_path[BUFFER_SIZE];
+            int   status      = 0;
 
             // Close network socket, uneeded
             close(net_socket.sockfd);
@@ -183,7 +175,7 @@ int main(int argc, char *argv[])
             printf("exiting child process\n");
             socket_close(*accepted_fd_copy);
             free(accepted_fd_copy);
-            exit(0);
+            exit(status);
         }
         else if(pid < 0)
         {
@@ -210,41 +202,3 @@ cleanup:
 done:
     return err;
 }
-
-// while(total_pid > 0)
-// {
-//     reap_child(&total_pid, &err);
-//     if(err != 0)
-//     {
-//         break;
-//     }
-// }
-
-// if(execv(, argv) == -1)
-// {
-//     perror("execv");
-//     socket_close(accepted_fd);
-//     continue;
-// }
-// memset(buffer, 0, sizeof(buffer));
-// bytes_received = recv(accepted_fd, buffer, sizeof(buffer), 0);
-
-//==============
-// if(bytes_received <= 0)
-// {
-//     // Handle errors or client disconnection
-//     if(bytes_received == 0)
-//     {
-//         printf("Client disconnected.\n");
-//     }
-//     else
-//     {
-//         perror("Error receiving data");
-//     }
-//     socket_close(accepted_fd);
-//     continue;
-// }
-//==============
-
-// printf("Received from client: %s\n", buffer);
-// socket_close(accepted_fd);

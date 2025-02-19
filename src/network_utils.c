@@ -11,13 +11,34 @@ void setup_signal(void (*handler)(int), const int signal_type, int *err)
 
 void handle_arguments(int argc, char *argv[], struct socket_network *net_socket, int *err)
 {
-    int option;
+    int       option;
+    char     *endptr;
+    long      port_input;
+    const int BASE_TEN  = 10;
     net_socket->address = NULL;
-    while((option = getopt(argc, argv, "h:")) != -1)
+    while((option = getopt(argc, argv, "h:p:")) != -1)
     {
         if(option == 'h')
         {
             net_socket->address = optarg;
+        }
+        else if(option == 'p')
+        {
+            port_input = strtol(optarg, &endptr, BASE_TEN);
+            if(errno != 0)
+            {
+                perror("strtol");
+                *err = errno;
+            }
+            if(port_input < 0 || port_input > SHRT_MAX)
+            {
+                printf("Port out of range.");
+                *err = 1;
+            }
+            else
+            {
+                net_socket->port = (uint16_t)port_input;
+            }
         }
         else
         {
@@ -68,7 +89,7 @@ void setup_network_address(struct socket_network *net_socket, int *err)
 
         net_socket->addr.ss_family = AF_INET;
         ipv4_addr                  = (struct sockaddr_in *)(&(net_socket->addr));
-        ipv4_addr->sin_port        = htons(PORT);
+        ipv4_addr->sin_port        = htons(net_socket->port);
         net_socket->addr_len       = sizeof(*ipv4_addr);
     }
     else if(inet_pton(AF_INET6, net_socket->address, &(((struct sockaddr_in6 *)(&(net_socket->addr)))->sin6_addr)) == 1)
@@ -77,7 +98,7 @@ void setup_network_address(struct socket_network *net_socket, int *err)
 
         net_socket->addr.ss_family = AF_INET6;
         ipv6_addr                  = (struct sockaddr_in6 *)(&(net_socket->addr));
-        ipv6_addr->sin6_port       = htons(PORT);
+        ipv6_addr->sin6_port       = htons(net_socket->port);
         net_socket->addr_len       = sizeof(*ipv6_addr);
     }
     else
