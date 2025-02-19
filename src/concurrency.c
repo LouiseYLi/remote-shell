@@ -92,7 +92,7 @@ int is_builtin_cmd(const char *cmd, char full_path[], int *err)
 {
     char       *saveptr;
     const char *token;
-    int         is_builtin    = 0;
+    int         is_builtin    = 1;
     const char *env_path      = getenv("PATH");
     char       *env_path_copy = NULL;
 
@@ -120,7 +120,7 @@ int is_builtin_cmd(const char *cmd, char full_path[], int *err)
         find_cmd(token, cmd, full_path, err);
         if(strlen(full_path) > 0)
         {
-            is_builtin = 1;
+            is_builtin = 0;
             break;
         }
         printf("%s ", token);
@@ -150,14 +150,11 @@ void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
     // cppcheck-suppress readdirCalled
     while((entry = readdir(dir_p)))
     {
-        printf("1\n");
         if(strcasecmp(entry->d_name, cmd) == 0)
         {
-            printf("2\n");
             concat_result = snprintf(full_path, BUFFER_SIZE, "%s/%s", path, cmd);
             if(concat_result < 0)
             {
-                printf("3\n");
                 perror("snprintf");
                 *err = 1;
                 break;
@@ -168,4 +165,40 @@ void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
         }
     }
     closedir(dir_p);
+}
+
+/*
+    Handles non built-in cmd (cmds that are not cd) by using execv to run cmds.
+
+    full_path: PATH path where executable is located.
+    client_argv: array of null-terminated strings, representing the arguments.
+    socket_fd: socket to write to.
+*/
+// TODO: start implementing client to test write from server.
+void handle_nonbuiltin_cmd(const char full_path[], char *client_argv[], int socket_fd, int *err)
+{
+    pid_t pid;
+
+    pid = fork();
+    if(pid == -1)
+    {
+        perror("fork");
+        *err = errno;
+        return;
+    }
+
+    if(pid == 0)
+    {
+        // redirect stdout to socket
+        dup2(socket_fd, STDOUT_FILENO);
+        // close original socket
+        close(socket_fd);
+
+        // replace process image with new process with specified args
+        execv(full_path, client_argv);
+
+        // if exec fails
+        perror("execv");
+        exit(1);
+    }
 }

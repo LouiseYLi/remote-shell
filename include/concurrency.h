@@ -15,4 +15,6 @@ int is_builtin_cmd(const char *cmd, char *full_path, int *err);
 
 void find_cmd(const char *path, const char *cmd, char *full_path, int *err);
 
+void handle_nonbuiltin_cmd(const char full_path[], char *client_argv[], int socket_fd, int *err);
+
 #endif    // CONCURRENCY_H
