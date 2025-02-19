@@ -140,7 +140,10 @@ int main(int argc, char *argv[])
             {    // Handle client connection
                 ssize_t bytes_received;
 
-                memset(buffer, 0, sizeof(buffer));
+                // clear the buffers
+                memset(buffer, 0, BUFFER_SIZE);
+                memset(full_path, 0, BUFFER_SIZE); 
+
                 bytes_received = read(*accepted_fd_copy, buffer, BUFFER_SIZE);
                 if(bytes_received <= 0)
                 {

@@ -81,6 +81,13 @@ void remove_trailing_newline(char *str)
     }
 }
 
+/*
+    Checks if command is built-in or not.
+    Returns 1 if built-in, else 0.
+
+    cmd: Command to check whether it is built-in or not.
+    full_path: Buffer to hold the full path of the exe, if found.
+*/
 int is_builtin_cmd(const char *cmd, char full_path[], int *err)
 {
     char       *saveptr;
@@ -143,11 +150,14 @@ void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
     // cppcheck-suppress readdirCalled
     while((entry = readdir(dir_p)))
     {
+        printf("1\n");
         if(strcasecmp(entry->d_name, cmd) == 0)
         {
+            printf("2\n");
             concat_result = snprintf(full_path, BUFFER_SIZE, "%s/%s", path, cmd);
             if(concat_result < 0)
             {
+                printf("3\n");
                 perror("snprintf");
                 *err = 1;
                 break;
