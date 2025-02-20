@@ -236,7 +236,6 @@ void handle_builtin_cmd(char *client_argv[], char message[], int *err)
         // cd can only accept one argument
         if(count > 2)
         {
-            // result = 1;
             strcpy(message, "cd: too many arguments\n");
             return;
         }
@@ -245,7 +244,6 @@ void handle_builtin_cmd(char *client_argv[], char message[], int *err)
         builtin_cd(client_argv[1], err);
         if(*err != 0)
         {
-            // result = 1;
             strcpy(message, "cd failed: No such file or directory\n");
         }
         else
@@ -256,14 +254,17 @@ void handle_builtin_cmd(char *client_argv[], char message[], int *err)
     else if(strcasecmp(client_argv[0], "pwd") == 0)
     {
         printf("total elements for pwd: %d\n", count);
+        strcpy(message, getcwd(message, BUFFER_SIZE));
     }
     else if(strcasecmp(client_argv[0], "echo") == 0)
     {
         printf("total elements for echo: %d\n", count);
+        concatenate_argv(client_argv, message);
     }
     else if(strcasecmp(client_argv[0], "type") == 0)
     {
         printf("total elements for type: %d\n", count);
+        
     }
 }
 
@@ -286,5 +287,23 @@ void builtin_cd(const char *path, int *err)
     {
         perror("chdir");
         *err = 1;
+    }
+}
+
+void concatenate_argv(char *client_argv[], char message[])
+{
+    int position = 0;
+
+    for(int i = 0; i < MAX_ARGS && client_argv[i] != NULL; i++)
+    {
+        for(int j = 0; client_argv[i][j] != '\0'; j++)
+        {
+            message[position++] = client_argv[i][j];
+        }
+
+        if(client_argv[i + 1] != NULL)
+        {    // Add space between arguments
+            message[position++] = ' ';
+        }
     }
 }

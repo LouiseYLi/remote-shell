@@ -25,4 +25,6 @@ void handle_builtin_cmd(char *client_argv[], char message[], int *err);
 
 void builtin_cd(const char *path, int *err);
 
+void concatenate_argv(char *client_argv[], char message[]);
+
 #endif    // CONCURRENCY_H
