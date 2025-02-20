@@ -165,7 +165,6 @@ int main(int argc, char *argv[])
                 {
                     break;
                 }
-
                 if(client_exit == 1)
                 {
                     break;
@@ -190,11 +189,10 @@ int main(int argc, char *argv[])
 
                 // if cmd is builtin
                 is_builtin = is_builtin_cmd(client_argv[0], full_path, &err);
-                if(is_builtin == 1 && err == 0)
+                if((is_builtin == 1 || is_builtin == -1) && err == 0)
                 {
-                    printf("cmd is built-in.\n");
                     // if invalid cmd args
-                    handle_builtin_cmd(client_argv, message, &err);
+                    handle_builtin_cmd(full_path, client_argv, message, &err);
 
                     bytes_sent = write(*accepted_fd_copy, message, strlen(message));
                     if(bytes_sent <= 0)
@@ -210,8 +208,6 @@ int main(int argc, char *argv[])
                 }
                 else if(is_builtin == 0 && err == 0)
                 {    // if cmd is not builtin
-                    printf("cmd is NOT built-in.\n");
-
                     handle_nonbuiltin_cmd(full_path, client_argv, *accepted_fd_copy, &err);
                 }
                 else if(err != 0)
@@ -219,6 +215,7 @@ int main(int argc, char *argv[])
                     break;
                 }
             }
+            printf("closing forked process...\n");
             socket_close(*accepted_fd_copy);
             free(accepted_fd_copy);
             exit(err);

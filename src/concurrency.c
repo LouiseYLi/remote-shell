@@ -22,7 +22,6 @@ int tokenize_client_args(char *client_argv[], char buffer[], int *err)
     if(strcasecmp(client_argv[0], "exit") == 0)
     {
         ret = 1;
-        printf("'exit' received\n... exiting\n");
         goto done;
     }
 
@@ -30,7 +29,6 @@ int tokenize_client_args(char *client_argv[], char buffer[], int *err)
     if(strcasecmp(client_argv[0], "cd") != 0 && strcasecmp(client_argv[0], "pwd") != 0 && strcasecmp(client_argv[0], "echo") != 0 && strcasecmp(client_argv[0], "type") != 0)
     {
         ret = 2;
-        printf("Invalid argument: %s.\n", client_argv[0]);
         goto done;
     }
 
@@ -52,20 +50,10 @@ int tokenize_client_args(char *client_argv[], char buffer[], int *err)
         client_argv[i] = token;
         remove_trailing_newline(client_argv[i]);
 
-        printf("ACTUAL TOKEN client_argv[%d] = \"%s\"\n", i, client_argv[i]);
-
         ++i;
     }
 
 done:
-    // TODO: remove this
-    printf("client arguments:\n");
-    for(int x = 0; x < i; x++)
-    {
-        printf("%s ", client_argv[x]);
-    }
-    printf("\n");
-    //=====
     client_argv[i] = NULL;
     return ret;
 }
@@ -84,7 +72,7 @@ void remove_trailing_newline(char *str)
 
 /*
     Checks if command is built-in or not.
-    Returns 1 if built-in, else 0.
+    Returns 1 if built-in, 0 if not built-in, -1 else.
 
     cmd: Command to check whether it is built-in or not.
     full_path: Buffer to hold the full path of the exe, if found.
@@ -113,8 +101,6 @@ int is_builtin_cmd(const char *cmd, char full_path[], int *err)
         goto done;
     }
 
-    printf("PATH: %s\n", env_path_copy);
-
     token = strtok_r(env_path_copy, ":", &saveptr);
     while(token != NULL)
     {
@@ -124,8 +110,12 @@ int is_builtin_cmd(const char *cmd, char full_path[], int *err)
             is_builtin = 0;
             break;
         }
-        printf("%s ", token);
         token = strtok_r(NULL, ":", &saveptr);
+    }
+
+    if(is_builtin != 0 && strcasecmp(cmd, "cd") != 0)
+    {
+        is_builtin = -1;
     }
 
     free(env_path_copy);
@@ -174,7 +164,6 @@ void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
     client_argv: array of null-terminated strings, representing the arguments.
     socket_fd: socket to write to.
 */
-// TODO: start implementing client to test write from server.
 void handle_nonbuiltin_cmd(const char full_path[], char *client_argv[], int socket_fd, int *err)
 {
     pid_t pid;
@@ -217,8 +206,9 @@ void clear_array(char *client_argv[])
 
 */
 // cppcheck-suppress constParameter
-void handle_builtin_cmd(char *client_argv[], char message[], int *err)
+void handle_builtin_cmd(char full_path[], char *client_argv[], char message[], int *err)
 {
+    // count args
     int count = 0;
     while(client_argv[count] != NULL)
     {
@@ -231,8 +221,6 @@ void handle_builtin_cmd(char *client_argv[], char message[], int *err)
     // no need check for pwd, exit, or echo
     if(strcasecmp(client_argv[0], "cd") == 0)
     {
-        printf("total elements for cd: %d\n", count);
-
         // cd can only accept one argument
         if(count > 2)
         {
@@ -244,27 +232,32 @@ void handle_builtin_cmd(char *client_argv[], char message[], int *err)
         builtin_cd(client_argv[1], err);
         if(*err != 0)
         {
-            strcpy(message, "cd failed: No such file or directory\n");
+            // strcpy(message, "cd failed: No such file or directory\n");
+            snprintf(message, BUFFER_SIZE, "%s\n", "cd failed: No such file or directory");
         }
         else
         {
-            strcpy(message, "cd successful\n");
+            // strcpy(message, "cd successful: %s\n", client_argv[1]);
+            snprintf(message, BUFFER_SIZE, "cd successful\n");
         }
     }
     else if(strcasecmp(client_argv[0], "pwd") == 0)
     {
-        printf("total elements for pwd: %d\n", count);
-        strcpy(message, getcwd(message, BUFFER_SIZE));
+        // strcpy(message, getcwd(message, BUFFER_SIZE));
+        snprintf(message, BUFFER_SIZE, "%s\n", getcwd(message, BUFFER_SIZE));
     }
     else if(strcasecmp(client_argv[0], "echo") == 0)
     {
-        printf("total elements for echo: %d\n", count);
         concatenate_argv(client_argv, message);
     }
     else if(strcasecmp(client_argv[0], "type") == 0)
     {
-        printf("total elements for type: %d\n", count);
-        
+        if(count < 2)
+        {
+            strcpy(message, "type: too few arguments\n");
+            return;
+        }
+        builtin_type(full_path, client_argv, message, err);
     }
 }
 
@@ -281,7 +274,6 @@ void builtin_cd(const char *path, int *err)
             return;
         }
     }
-    printf("path for cd: %s\n", path);
 
     if(chdir(path) != 0)
     {
@@ -305,5 +297,39 @@ void concatenate_argv(char *client_argv[], char message[])
         {    // Add space between arguments
             message[position++] = ' ';
         }
+    }
+}
+
+void builtin_type(char full_path[], char *client_argv[], char message[], int *err)
+{
+    char temp_message[BUFFER_SIZE];   
+    int  count = 1;
+    while(client_argv[count] != NULL)
+    {
+        ++count;
+    }
+    for(int i = 1; i < count; i++)
+    {
+        int is_builtin;
+        memset(full_path, 0, BUFFER_SIZE);
+        memset(temp_message, 0, BUFFER_SIZE); 
+
+        is_builtin = is_builtin_cmd(client_argv[i], full_path, err);
+
+        if(is_builtin == 1)
+        {
+            snprintf(temp_message, BUFFER_SIZE, "%s is a shell builtin\n", client_argv[i]);
+        }
+        else if(full_path[0] != 0)
+        {
+            snprintf(temp_message, BUFFER_SIZE, "%s is %s\n", client_argv[i], full_path);
+        }
+        else if(is_builtin == -1)
+        {
+            snprintf(temp_message, BUFFER_SIZE, "%s: command not found\n", client_argv[i]);
+        }
+
+        // concat the temp_message to the main message
+        strncat(message, temp_message, BUFFER_SIZE - strlen(message) - 1);   // -1 to prevent buff overflow
     }
 }

@@ -69,12 +69,11 @@ int main(int argc, char *argv[])
         memset(buffer, 0, BUFFER_SIZE);
         memset(user_input, 0, INPUT_SIZE + 1);
 
-        printf("Enter a command:\n");
+        printf("\nEnter a command:\n");
         // scanf("%100s", user_input);
         if(fgets(user_input, sizeof(user_input), stdin) != NULL)
         {
             remove_trailing_newline(user_input);
-            printf("You entered: %s\n", user_input);
         }
         else
         {
@@ -83,17 +82,18 @@ int main(int argc, char *argv[])
             break;
         }
 
-        if(strstr(user_input, "exit") != NULL)
-        {
-            printf("exiting...\n");
-            goto cleanup;
-        }
-
         bytes_sent = write(net_socket.sockfd, user_input, strlen(user_input));
         if(bytes_sent <= 0)
         {
             perror("write");
             err = errno;
+        }
+
+        // check if user input contains exit
+        if(strstr(user_input, "exit") != NULL)
+        {
+            printf("exiting...\n");
+            goto cleanup;
         }
 
         bytes_received = read(net_socket.sockfd, buffer, BUFFER_SIZE);
@@ -105,7 +105,6 @@ int main(int argc, char *argv[])
             }
             else    // Non-blocking socket -> go next
             {
-                printf("non-blocking...\n");
                 continue;
             }
         }
