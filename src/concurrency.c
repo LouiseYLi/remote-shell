@@ -2,7 +2,7 @@
 
 /*
     Tokenizes client arguments.
-    Return 0 if ok, 1 if exit requested.
+    Return 0 if ok, 1 if exit requested, 2 if an invalid argument.
 */
 int tokenize_client_args(char *client_argv[], char buffer[], int *err)
 {
@@ -10,6 +10,7 @@ int tokenize_client_args(char *client_argv[], char buffer[], int *err)
     char *token;
     int   ret = 0;
     int   i   = 0;
+
     // get first arg (command) from buffer
     token = strtok_r(buffer, " ", &saveptr);
 
@@ -28,8 +29,8 @@ int tokenize_client_args(char *client_argv[], char buffer[], int *err)
     // if arg is not one of the valid commands, exit
     if(strcasecmp(client_argv[0], "cd") != 0 && strcasecmp(client_argv[0], "pwd") != 0 && strcasecmp(client_argv[0], "echo") != 0 && strcasecmp(client_argv[0], "type") != 0)
     {
-        ret = 1;
-        printf("Invalid argument: %s... exiting.\n", client_argv[0]);
+        ret = 2;
+        printf("Invalid argument: %s.\n", client_argv[0]);
         goto done;
     }
 
@@ -145,7 +146,6 @@ void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
         *err = errno;
         return;
     }
-    printf("opened directory: %s...\n", path);
     // readdir_r is deprecated, that's why i
     // cppcheck-suppress readdirCalled
     while((entry = readdir(dir_p)))
@@ -200,5 +200,91 @@ void handle_nonbuiltin_cmd(const char full_path[], char *client_argv[], int sock
         // if exec fails
         perror("execv");
         exit(1);
+    }
+}
+
+void clear_array(char *client_argv[])
+{
+    for(int i = 0; i < MAX_ARGS; i++)
+    {
+        client_argv[i] = NULL;
+    }
+}
+
+/*
+    Validates command line arguments.
+    Returns 0 if ok, 1 if invalid.
+
+*/
+// cppcheck-suppress constParameter
+void handle_builtin_cmd(char *client_argv[], char message[], int *err)
+{
+    int count = 0;
+    while(client_argv[count] != NULL)
+    {
+        ++count;
+    }
+    if(count == 0)
+    {
+        return;
+    }
+    // no need check for pwd, exit, or echo
+    if(strcasecmp(client_argv[0], "cd") == 0)
+    {
+        printf("total elements for cd: %d\n", count);
+
+        // cd can only accept one argument
+        if(count > 2)
+        {
+            // result = 1;
+            strcpy(message, "cd: too many arguments\n");
+            return;
+        }
+
+        // pass in path
+        builtin_cd(client_argv[1], err);
+        if(*err != 0)
+        {
+            // result = 1;
+            strcpy(message, "cd failed: No such file or directory\n");
+        }
+        else
+        {
+            strcpy(message, "cd successful\n");
+        }
+    }
+    else if(strcasecmp(client_argv[0], "pwd") == 0)
+    {
+        printf("total elements for pwd: %d\n", count);
+    }
+    else if(strcasecmp(client_argv[0], "echo") == 0)
+    {
+        printf("total elements for echo: %d\n", count);
+    }
+    else if(strcasecmp(client_argv[0], "type") == 0)
+    {
+        printf("total elements for type: %d\n", count);
+    }
+}
+
+void builtin_cd(const char *path, int *err)
+{
+    if(path == NULL)
+    {
+        // change to home directory
+        path = getenv("HOME");
+        if(path == NULL)
+        {
+            perror("HOME not set");
+            *err = 1;
+            return;
+        }
+    }
+    printf("path for cd: %s\n", path);
+
+    if(chdir(path) != 0)
+    {
+        perror("chdir");
+        *err = 1;
     }
 }

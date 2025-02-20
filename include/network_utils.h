@@ -19,6 +19,7 @@
 
 #define PORT 8080
 #define BUFFER_SIZE 1024
+#define INPUT_SIZE 100
 #define MAX_PROCESSES 10
 #define MAX_ARGS 10
 #define INT_BUFFER_SIZE 10
@@ -40,6 +41,8 @@ void handle_arguments(int argc, char *argv[], struct socket_network *net_socket,
 void socket_create(struct socket_network *net_socket, int *err);
 
 void socket_set_non_blocking(struct socket_network *net_socket, int *err);
+
+void socket_set_blocking(const int *sockfd, int *err);
 
 void setup_network_address(struct socket_network *net_socket, int *err);
 

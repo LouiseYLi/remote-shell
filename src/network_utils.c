@@ -79,6 +79,22 @@ void socket_set_non_blocking(struct socket_network *net_socket, int *err)
     }
 }
 
+void socket_set_blocking(const int *sockfd, int *err)
+{
+    // Returns flags of socket
+    int flags = fcntl(*sockfd, F_GETFL, 0);
+    if(flags == -1)
+    {
+        *err = errno;
+    }
+
+    // Sets non-blocking flag to socket
+    if(fcntl(*sockfd, F_SETFL, flags & ~O_NONBLOCK) == -1)
+    {
+        *err = errno;
+    }
+}
+
 void setup_network_address(struct socket_network *net_socket, int *err)
 {
     memset(&(net_socket->addr), 0, sizeof((net_socket->addr)));

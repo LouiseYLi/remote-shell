@@ -22,8 +22,9 @@ void sigint_handler(int signal)
 int main(int argc, char *argv[])
 {
     struct socket_network net_socket;
-    char                  exit_request[EXIT_REQ_SIZE + INT_BUFFER_SIZE + 2];
     ssize_t               bytes_sent;
+    char                  buffer[BUFFER_SIZE];
+    char                  exit_request[EXIT_REQ_SIZE + INT_BUFFER_SIZE + 2];
     char                  err_str[INT_BUFFER_SIZE + 2];
     int                   err = 0;
 
@@ -62,26 +63,56 @@ int main(int argc, char *argv[])
 
     while(terminate != 1)
     {
-        // ssize_t bytes_received;
+        ssize_t bytes_received;
+        char    user_input[INPUT_SIZE + 1];
 
-        // memset(buffer, 0, BUFFER_SIZE);
-        // memset(full_path, 0, BUFFER_SIZE);
+        memset(buffer, 0, BUFFER_SIZE);
+        memset(user_input, 0, INPUT_SIZE + 1);
 
-        // bytes_received = read(net_socket.sockfd, buffer, BUFFER_SIZE);
-        // if(bytes_received <= 0)
-        // {
-        //     if(errno != EAGAIN)
-        //     {
-        //         perror("read");
-        //     }
-        //     else    // Non-blocking socket -> go next
-        //     {
-        //         printf("non-blocking...\n");
-        //         continue;
-        //     }
-        // }
+        printf("Enter a command:\n");
+        // scanf("%100s", user_input);
+        if(fgets(user_input, sizeof(user_input), stdin) != NULL)
+        {
+            remove_trailing_newline(user_input);
+            printf("You entered: %s\n", user_input);
+        }
+        else
+        {
+            perror("fgets");
+            err = errno;
+            break;
+        }
+
+        if(strstr(user_input, "exit") != NULL)
+        {
+            printf("exiting...\n");
+            goto cleanup;
+        }
+
+        bytes_sent = write(net_socket.sockfd, user_input, strlen(user_input));
+        if(bytes_sent <= 0)
+        {
+            perror("write");
+            err = errno;
+        }
+
+        bytes_received = read(net_socket.sockfd, buffer, BUFFER_SIZE);
+        if(bytes_received <= 0)
+        {
+            if(errno != EAGAIN)
+            {
+                perror("read");
+            }
+            else    // Non-blocking socket -> go next
+            {
+                printf("non-blocking...\n");
+                continue;
+            }
+        }
+        // print shell output
+        printf("%s", buffer);
     }
-
+    // TODO: what if user sends exit request too? move this to different scope
     // graceful termination
     // convert err to string
     snprintf(err_str, sizeof(err_str), "%d", err);

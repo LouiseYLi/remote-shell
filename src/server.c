@@ -123,18 +123,28 @@ int main(int argc, char *argv[])
             char  full_path[BUFFER_SIZE];
             int   is_builtin;
             int   client_exit = 0;
-            int   status      = 0;
 
             // Close network socket, uneeded
             close(net_socket.sockfd);
 
+            socket_set_blocking(accepted_fd_copy, &err);
+            if(err != 0)
+            {
+                client_exit = 1;
+            }
+
             while(client_exit == 0)
             {    // Handle client connection
                 ssize_t bytes_received;
+                ssize_t bytes_sent;
+                char    message[BUFFER_SIZE];
 
                 // clear the buffers
                 memset(buffer, 0, BUFFER_SIZE);
                 memset(full_path, 0, BUFFER_SIZE);
+                memset(message, 0, BUFFER_SIZE);
+
+                clear_array(client_argv);
 
                 bytes_received = read(*accepted_fd_copy, buffer, BUFFER_SIZE);
                 if(bytes_received <= 0)
@@ -142,11 +152,11 @@ int main(int argc, char *argv[])
                     if(errno != EAGAIN)
                     {
                         perror("read");
+                        err = errno;
+                        break;
                     }
-                    else    // Non-blocking socket -> go next
-                    {
-                        continue;
-                    }
+                    // Non-blocking socket -> go next
+                    continue;
                 }
 
                 // tokenize arguments
@@ -156,15 +166,52 @@ int main(int argc, char *argv[])
                     break;
                 }
 
+                if(client_exit == 1)
+                {
+                    break;
+                }
+                // if an invalid cmd was sent
+                if(client_exit == 2)
+                {
+                    const char *cmd_not_found = "command: not found\n";
+                    bytes_sent                = write(*accepted_fd_copy, cmd_not_found, strlen(cmd_not_found));
+                    if(bytes_sent <= 0)
+                    {
+                        if(errno != EAGAIN)
+                        {
+                            perror("write");
+                            err = errno;
+                            break;
+                        }
+                    }
+                    client_exit = 0;
+                    continue;
+                }
+
                 // if cmd is builtin
                 is_builtin = is_builtin_cmd(client_argv[0], full_path, &err);
                 if(is_builtin == 1 && err == 0)
                 {
                     printf("cmd is built-in.\n");
+                    // if invalid cmd args
+                    handle_builtin_cmd(client_argv, message, &err);
+
+                    bytes_sent = write(*accepted_fd_copy, message, strlen(message));
+                    if(bytes_sent <= 0)
+                    {
+                        if(errno != EAGAIN)
+                        {
+                            perror("write");
+                            err = errno;
+                            break;
+                        }
+                    }
+                    client_exit = 0;
                 }
                 else if(is_builtin == 0 && err == 0)
                 {    // if cmd is not builtin
                     printf("cmd is NOT built-in.\n");
+
                     handle_nonbuiltin_cmd(full_path, client_argv, *accepted_fd_copy, &err);
                 }
                 else if(err != 0)
@@ -172,10 +219,9 @@ int main(int argc, char *argv[])
                     break;
                 }
             }
-            printf("exiting child process\n");
             socket_close(*accepted_fd_copy);
             free(accepted_fd_copy);
-            exit(status);
+            exit(err);
         }
         else if(pid < 0)
         {
