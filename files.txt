@@ -1,2 +1,2 @@
-server include/concurrency.h src/concurrency.c include/network_utils.h src/network_utils.c src/server.c src/display.c include/display.h
-client include/concurrency.h src/concurrency.c include/network_utils.h src/network_utils.c src/client.c src/display.c include/display.h
+server include/utils.h src/utils.c include/network_utils.h src/network_utils.c src/server.c src/display.c include/display.h
+client include/utils.h src/utils.c include/network_utils.h src/network_utils.c src/client.c src/display.c include/display.h

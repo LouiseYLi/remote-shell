@@ -1,4 +1,4 @@
-#include "../include/concurrency.h"
+#include "../include/utils.h"
 
 void handle_signal(int signal);
 void sigchld_handler(int signal);
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
     {
         pid_t pid;
         char  buffer[BUFFER_SIZE];
-        int  *accepted_fd_copy;
-        int   accepted_fd = accept(net_socket.sockfd, (struct sockaddr *)(&(net_socket.addr)), &(net_socket.addr_len));
+        // int  *accepted_fd_copy;
+        int accepted_fd = accept(net_socket.sockfd, (struct sockaddr *)(&(net_socket.addr)), &(net_socket.addr_len));
         if(accepted_fd < 0)    // Error checks
         {
             if(errno != EAGAIN)
@@ -106,15 +106,16 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Create a temp copy that will not be overwritten
-        accepted_fd_copy = (int *)malloc(sizeof(int));
-        if(accepted_fd_copy == NULL)
-        {
-            perror("malloc");
-            err = errno;
-            goto cleanup;
-        }
-        *accepted_fd_copy = accepted_fd;
+        // // Create a temp copy that will not be overwritten
+        // accepted_fd_copy = (int *)malloc(sizeof(int));
+        // if(accepted_fd_copy == NULL)
+        // {
+        //     perror("malloc");
+        //     err = errno;
+        //     socket_close(accepted_fd);
+        //     break;
+        // }
+        // *accepted_fd_copy = accepted_fd;
 
         pid = fork();
         if(pid == 0)
@@ -123,9 +124,21 @@ int main(int argc, char *argv[])
             char  full_path[BUFFER_SIZE];
             int   is_builtin;
             int   client_exit = 0;
+            int  *accepted_fd_copy;
 
             // Close network socket, uneeded
             close(net_socket.sockfd);
+
+            // Create a temp copy that will not be overwritten
+            accepted_fd_copy = (int *)malloc(sizeof(int));
+            if(accepted_fd_copy == NULL)
+            {
+                perror("malloc");
+                err = errno;
+                close(accepted_fd);
+                goto fork_done;
+            }
+            *accepted_fd_copy = accepted_fd;
 
             socket_set_blocking(accepted_fd_copy, &err);
             if(err != 0)
@@ -191,7 +204,6 @@ int main(int argc, char *argv[])
                 is_builtin = is_builtin_cmd(client_argv[0], full_path, &err);
                 if((is_builtin == 1 || is_builtin == -1) && err == 0)
                 {
-                    // if invalid cmd args
                     handle_builtin_cmd(full_path, client_argv, message, &err);
 
                     bytes_sent = write(*accepted_fd_copy, message, strlen(message));
@@ -216,22 +228,23 @@ int main(int argc, char *argv[])
                 }
             }
             printf("closing forked process...\n");
-            socket_close(*accepted_fd_copy);
+            close(*accepted_fd_copy);
             free(accepted_fd_copy);
+        fork_done:
             exit(err);
         }
         else if(pid < 0)
         {
             perror("fork");
             err = errno;
-            socket_close(*accepted_fd_copy);
-            free(accepted_fd_copy);
-            goto cleanup;
+            // close(*accepted_fd_copy);
+            // free(accepted_fd_copy);
+            break;
         }
         else
         {
-            socket_close(*accepted_fd_copy);
-            free(accepted_fd_copy);
+            // close(*accepted_fd_copy);
+            // free(accepted_fd_copy);
             // ++total_pid;
         }
     }
@@ -240,7 +253,7 @@ int main(int argc, char *argv[])
 
 cleanup:
 
-    socket_close(net_socket.sockfd);
+    close(net_socket.sockfd);
 
 done:
     return err;

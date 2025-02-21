@@ -1,4 +1,4 @@
-#include "../include/concurrency.h"
+#include "../include/utils.h"
 #include <stdlib.h>
 
 void sigint_handler(int signal);
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
         err = errno;
     }
 cleanup:
-    socket_close(net_socket.sockfd);
+    close(net_socket.sockfd);
 done:
     return err;
 }

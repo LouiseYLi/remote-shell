@@ -1,4 +1,4 @@
-#include "../include/concurrency.h"
+#include "../include/utils.h"
 
 /*
     Tokenizes client arguments.
@@ -123,6 +123,10 @@ done:
     return is_builtin;
 }
 
+/*
+    Attempts to find executable of cmd in path.
+    Sets full_path if found.
+*/
 void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
 {
     const struct dirent *entry;
@@ -136,7 +140,7 @@ void find_cmd(const char *path, const char *cmd, char full_path[], int *err)
         *err = errno;
         return;
     }
-    // readdir_r is deprecated, that's why i
+    // readdir_r is deprecated, that's why I suppress
     // cppcheck-suppress readdirCalled
     while((entry = readdir(dir_p)))
     {
@@ -218,13 +222,15 @@ void handle_builtin_cmd(char full_path[], char *client_argv[], char message[], i
     {
         return;
     }
+
     // no need check for pwd, exit, or echo
     if(strcasecmp(client_argv[0], "cd") == 0)
     {
         // cd can only accept one argument
         if(count > 2)
         {
-            strcpy(message, "cd: too many arguments\n");
+            // strcpy(message, "cd: too many arguments\n");
+            snprintf(message, BUFFER_SIZE, "%s\n", "cd: too many arguments\n");
             return;
         }
 
@@ -234,6 +240,7 @@ void handle_builtin_cmd(char full_path[], char *client_argv[], char message[], i
         {
             // strcpy(message, "cd failed: No such file or directory\n");
             snprintf(message, BUFFER_SIZE, "%s\n", "cd failed: No such file or directory");
+            *err = 0;
         }
         else
         {
@@ -254,13 +261,17 @@ void handle_builtin_cmd(char full_path[], char *client_argv[], char message[], i
     {
         if(count < 2)
         {
-            strcpy(message, "type: too few arguments\n");
+            // strcpy(message, "type: too few arguments\n");
+            snprintf(message, BUFFER_SIZE, "%s\n", "type: too few arguments\n");
             return;
         }
         builtin_type(full_path, client_argv, message, err);
     }
 }
 
+/*
+    Executes builtin cd command.
+*/
 void builtin_cd(const char *path, int *err)
 {
     if(path == NULL)
@@ -302,7 +313,7 @@ void concatenate_argv(char *client_argv[], char message[])
 
 void builtin_type(char full_path[], char *client_argv[], char message[], int *err)
 {
-    char temp_message[BUFFER_SIZE];   
+    char temp_message[BUFFER_SIZE];
     int  count = 1;
     while(client_argv[count] != NULL)
     {
@@ -312,7 +323,7 @@ void builtin_type(char full_path[], char *client_argv[], char message[], int *er
     {
         int is_builtin;
         memset(full_path, 0, BUFFER_SIZE);
-        memset(temp_message, 0, BUFFER_SIZE); 
+        memset(temp_message, 0, BUFFER_SIZE);
 
         is_builtin = is_builtin_cmd(client_argv[i], full_path, err);
 
@@ -330,6 +341,6 @@ void builtin_type(char full_path[], char *client_argv[], char message[], int *er
         }
 
         // concat the temp_message to the main message
-        strncat(message, temp_message, BUFFER_SIZE - strlen(message) - 1);   // -1 to prevent buff overflow
+        strncat(message, temp_message, BUFFER_SIZE - strlen(message) - 1);    // -1 to prevent buff overflow
     }
 }

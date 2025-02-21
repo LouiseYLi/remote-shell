@@ -1,5 +1,5 @@
-#ifndef CONCURRENCY_H
-#define CONCURRENCY_H
+#ifndef UTILS_H
+#define UTILS_H
 
 #include "../include/network_utils.h"
 
@@ -29,4 +29,4 @@ void concatenate_argv(char *client_argv[], char message[]);
 
 void builtin_type(char full_path[], char *client_argv[], char message[], int *err);
 
-#endif    // CONCURRENCY_H
+#endif    // UTILS_H
