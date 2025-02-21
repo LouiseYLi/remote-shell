@@ -111,7 +111,6 @@ int main(int argc, char *argv[])
         // print shell output
         printf("%s", buffer);
     }
-    // TODO: what if user sends exit request too? move this to different scope
     // graceful termination
     // convert err to string
     snprintf(err_str, sizeof(err_str), "%d", err);

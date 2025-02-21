@@ -34,6 +34,7 @@ void sigchld_handler(int signal)
 int main(int argc, char *argv[])
 {
     struct socket_network net_socket;
+    int                   sockfd;
 
     // int total_pid = 0;
     int err = 0;
@@ -50,6 +51,8 @@ int main(int argc, char *argv[])
         goto done;
     }
 
+    sockfd = net_socket.sockfd;
+
     socket_set_non_blocking(&net_socket, &err);
     if(err != 0)
     {
@@ -62,13 +65,13 @@ int main(int argc, char *argv[])
         goto cleanup;
     }
 
-    socket_bind(net_socket.sockfd, (struct sockaddr *)(&(net_socket.addr)), net_socket.addr_len, &err);
+    socket_bind(sockfd, (struct sockaddr *)(&(net_socket.addr)), net_socket.addr_len, &err);
     if(err != 0)
     {
         goto cleanup;
     }
 
-    socket_listen(net_socket.sockfd, SOMAXCONN, &err);
+    socket_listen(sockfd, SOMAXCONN, &err);
     if(err != 0)
     {
         goto cleanup;
@@ -91,8 +94,8 @@ int main(int argc, char *argv[])
         pid_t pid;
         char  buffer[BUFFER_SIZE];
         // int  *accepted_fd_copy;
-        int accepted_fd = accept(net_socket.sockfd, (struct sockaddr *)(&(net_socket.addr)), &(net_socket.addr_len));
-        if(accepted_fd < 0)    // Error checks
+        int accepted_fd = accept(sockfd, (struct sockaddr *)(&(net_socket.addr)), &(net_socket.addr_len));    // NOLINT(android-cloexec-socket)
+        if(accepted_fd < 0)                                                                                   // Error checks
         {
             if(errno != EAGAIN)
             {
@@ -106,17 +109,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        // // Create a temp copy that will not be overwritten
-        // accepted_fd_copy = (int *)malloc(sizeof(int));
-        // if(accepted_fd_copy == NULL)
-        // {
-        //     perror("malloc");
-        //     err = errno;
-        //     socket_close(accepted_fd);
-        //     break;
-        // }
-        // *accepted_fd_copy = accepted_fd;
-
         pid = fork();
         if(pid == 0)
         {
@@ -127,7 +119,7 @@ int main(int argc, char *argv[])
             int  *accepted_fd_copy;
 
             // Close network socket, uneeded
-            close(net_socket.sockfd);
+            close(sockfd);
 
             // Create a temp copy that will not be overwritten
             accepted_fd_copy = (int *)malloc(sizeof(int));
@@ -178,31 +170,10 @@ int main(int argc, char *argv[])
                 {
                     break;
                 }
-                // if(client_exit == 1)
-                // {
-                //     break;
-                // }
-                // if an invalid cmd was sent
-                if(client_exit == 2)
-                {
-                    const char *cmd_not_found = "command: not found\n";
-                    bytes_sent                = write(*accepted_fd_copy, cmd_not_found, strlen(cmd_not_found));
-                    if(bytes_sent <= 0)
-                    {
-                        if(errno != EAGAIN)
-                        {
-                            perror("write");
-                            err = errno;
-                            break;
-                        }
-                    }
-                    client_exit = 0;
-                    continue;
-                }
 
                 // if cmd is builtin
                 is_builtin = is_builtin_cmd(client_argv[0], full_path, &err);
-                if((is_builtin == 1 || is_builtin == -1) && err == 0)
+                if(is_builtin == 1 && err == 0)
                 {
                     handle_builtin_cmd(full_path, client_argv, message, &err);
 
@@ -222,6 +193,22 @@ int main(int argc, char *argv[])
                 {    // if cmd is not builtin
                     handle_nonbuiltin_cmd(full_path, client_argv, *accepted_fd_copy, &err);
                 }
+                else if(is_builtin == -1 && err == 0)
+                {
+                    const char *cmd_not_found = "command: not found\n";
+                    bytes_sent                = write(*accepted_fd_copy, cmd_not_found, strlen(cmd_not_found));
+                    if(bytes_sent <= 0)
+                    {
+                        if(errno != EAGAIN)
+                        {
+                            perror("write");
+                            err = errno;
+                            break;
+                        }
+                    }
+                    client_exit = 0;
+                    continue;
+                }
                 else if(err != 0)
                 {
                     break;
@@ -238,14 +225,10 @@ int main(int argc, char *argv[])
             perror("fork");
             err = errno;
             close(accepted_fd);
-            // free(accepted_fd_copy);
             break;
         }
         else
         {
-            // close(*accepted_fd_copy);
-            // free(accepted_fd_copy);
-            // ++total_pid;
             close(accepted_fd);
         }
     }
@@ -254,7 +237,7 @@ int main(int argc, char *argv[])
 
 cleanup:
 
-    close(net_socket.sockfd);
+    close(sockfd);
 
 done:
     return err;

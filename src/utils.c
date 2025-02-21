@@ -2,7 +2,7 @@
 
 /*
     Tokenizes client arguments.
-    Return 0 if ok, 1 if exit requested, 2 if an invalid argument.
+    Return 0 if ok, 1 if exit requested.
 */
 int tokenize_client_args(char *client_argv[], char buffer[], int *err)
 {
@@ -22,13 +22,6 @@ int tokenize_client_args(char *client_argv[], char buffer[], int *err)
     if(strcasecmp(client_argv[0], "exit") == 0)
     {
         ret = 1;
-        goto done;
-    }
-
-    // if arg is not one of the valid commands, exit
-    if(strcasecmp(client_argv[0], "cd") != 0 && strcasecmp(client_argv[0], "pwd") != 0 && strcasecmp(client_argv[0], "echo") != 0 && strcasecmp(client_argv[0], "type") != 0)
-    {
-        ret = 2;
         goto done;
     }
 
@@ -107,13 +100,15 @@ int is_builtin_cmd(const char *cmd, char full_path[], int *err)
         find_cmd(token, cmd, full_path, err);
         if(strlen(full_path) > 0)
         {
+            // found exe
             is_builtin = 0;
             break;
         }
         token = strtok_r(NULL, ":", &saveptr);
     }
 
-    if(is_builtin != 0 && strcasecmp(cmd, "cd") != 0)
+    // if cmd is not built in and not cd then
+    if(is_builtin != 0 && strcasecmp(cmd, "cd") != 0 && strcasecmp(cmd, "exit") != 0 && strcasecmp(cmd, "echo") != 0 && strcasecmp(cmd, "pwd") != 0 && strcasecmp(cmd, "type") != 0)
     {
         is_builtin = -1;
     }

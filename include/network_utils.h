@@ -27,11 +27,16 @@
 
 struct socket_network
 {
-    char                   *address;
-    int                     sockfd;
+    // cppcheck-suppress unusedStructMember
+    char *address;
+    // cppcheck-suppress unusedStructMember
+    int sockfd;
+    // cppcheck-suppress unusedStructMember
     struct sockaddr_storage addr;
-    socklen_t               addr_len;
-    uint16_t                port;
+    // cppcheck-suppress unusedStructMember
+    socklen_t addr_len;
+    // cppcheck-suppress unusedStructMember
+    uint16_t port;
 };
 
 void setup_signal(void (*handler)(int), int signal_type, int *err);
