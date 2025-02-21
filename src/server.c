@@ -174,14 +174,14 @@ int main(int argc, char *argv[])
 
                 // tokenize arguments
                 client_exit = tokenize_client_args(client_argv, buffer, &err);
-                if(err != 0)
+                if(err != 0 || client_exit == 1)
                 {
                     break;
                 }
-                if(client_exit == 1)
-                {
-                    break;
-                }
+                // if(client_exit == 1)
+                // {
+                //     break;
+                // }
                 // if an invalid cmd was sent
                 if(client_exit == 2)
                 {
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
         {
             perror("fork");
             err = errno;
-            // close(*accepted_fd_copy);
+            close(accepted_fd);
             // free(accepted_fd_copy);
             break;
         }
@@ -246,6 +246,7 @@ int main(int argc, char *argv[])
             // close(*accepted_fd_copy);
             // free(accepted_fd_copy);
             // ++total_pid;
+            close(accepted_fd);
         }
     }
 
